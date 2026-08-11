@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>River Eye — Dashboard v2</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #080b10;
+    font-family: 'Courier New', monospace;
+    color: #c8d0dc;
+    padding: 24px;
+  }
+
+  .page-title {
+    color: #3a4a5a;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 6px;
+  }
+  .page-sub {
+    color: #222a34;
+    font-size: 9px;
+    text-align: center;
+    letter-spacing: 1px;
+    margin-bottom: 20px;
+  }
+
+  /* Window chrome */
+  .win {
+    max-width: 1160px;
+    margin: 0 auto 28px;
+    border: 1px solid #1c2535;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 12px 48px #000c;
+  }
+  .win-bar {
+    background: #0d1520;
+    border-bottom: 1px solid #1c2535;
+    padding: 7px 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .win-bar .d { width: 9px; height: 9px; border-radius: 50%; }
+  .win-bar .d.r { background: #3a1515; border: 1px solid #6a2525; }
+  .win-bar .d.y { background: #2a2010; border: 1px solid #5a4010; }
+  .win-bar .d.g { background: #0f2515; border: 1px solid #1a4525; }
+  .win-title { color: #2a3a4a; font-size: 10px; letter-spacing: 1px; margin-left: 8px; }
+
+  /* Grid layout */
+  .dash {
+    background: #0a0e16;
+    display: grid;
+    grid-template-rows: 42px 1fr 36px;
+    grid-template-columns: 1fr 300px;
+    min-height: 580px;
+  }
+
+  /* ── HEADER ── */
+  .hdr {
+    grid-column: 1 / -1;
+    background: #0d1520;
+    border-bottom: 1px solid #1c2535;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 0;
+  }
+  .hdr-brand {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    border-right: 1px solid #1c2535;
+    padding-right: 16px;
+    margin-right: 16px;
+  }
+  .hdr-name {
+    color: #7ab8e8;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 3px;
+  }
+  .hdr-sub {
+    color: #2a3a4a;
+    font-size: 9px;
+    letter-spacing: 1px;
+  }
+  .hdr-chips {
+    display: flex;
+    gap: 0;
+    flex: 1;
+  }
+  .chip {
+    border-right: 1px solid #1c2535;
+    padding: 0 14px;
+    height: 42px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .chip-key {
+    color: #1e2e3e;
+    font-size: 8px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .chip-val {
+    color: #4a6a8a;
+    font-size: 10px;
+    margin-top: 1px;
+  }
+  .chip-val.live { color: #3ab878; }
+  .chip-val.warn { color: #e8a030; }
+
+  /* MQTT status */
+  .mqtt-status {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-left: 1px solid #1c2535;
+    padding-left: 16px;
+  }
+  .conn-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #3ab878;
+    box-shadow: 0 0 6px #3ab87866;
+    animation: blink 2s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .conn-label { color: #3ab878; font-size: 9px; letter-spacing: 1px; }
+  .conn-host  { color: #1e2e3e; font-size: 9px; margin-left: 2px; }
+
+  /* ── LEFT MAIN ── */
+  .main {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    border-right: 1px solid #1c2535;
+  }
+
+  /* Camera panel */
+  .cam {
+    background: #070b12;
+    border: 1px solid #141e2a;
+    border-radius: 3px;
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    min-height: 280px;
+  }
+  .cam-hdr {
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 26px;
+    background: #0d1520cc;
+    border-bottom: 1px solid #1c2535;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    gap: 10px;
+    z-index: 2;
+    backdrop-filter: blur(2px);
+  }
+  .cam-tag {
+    font-size: 8px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #2a4a6a;
+  }
+  .cam-source { color: #1a2a3a; font-size: 8px; }
+  .cam-fps    { margin-left: auto; color: #1a3a2a; font-size: 8px; letter-spacing: 1px; }
+  .cam-rec    { color: #8a2020; font-size: 8px; letter-spacing: 1px; display: flex; align-items: center; gap: 4px; }
+  .rec-dot    { width: 5px; height: 5px; border-radius: 50%; background: #cc3030; }
+
+  /* Simulated image */
+  .cam-img {
+    position: absolute;
+    top: 26px; left: 0; right: 0; bottom: 0;
+  }
+  /* Background scene */
+  .scene-bg {
+    width: 100%; height: 100%;
+    background: #0e1820;
+    position: relative;
+    overflow: hidden;
+  }
+  /* Water body */
+  .water-body {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 25%;
+    background: linear-gradient(180deg, #0a1e3a 0%, #071428 100%);
+    border-top: 2px solid #1a6aaa;
+  }
+  /* Gauge panel */
+  .gauge-panel {
+    position: absolute;
+    top: 0; bottom: 0;
+    right: 25%;
+    width: 48px;
+    display: flex;
+    flex-direction: column;
+  }
+  .g-zone { flex: 1; }
+  .g-zone.r { background: #3a0808; border-bottom: 1px solid #5a1010; }
+  .g-zone.o { background: #2a1a04; border-bottom: 1px solid #4a2a08; }
+  .g-zone.y { background: #2a2204; border-bottom: 1px solid #4a3a08; }
+  .g-zone.g { background: #0a2210; }
+  .g-zone.g.active { background: #0a2e14; }
+
+  /* Water line overlay */
+  .wl {
+    position: absolute;
+    left: 0; right: 0;
+    bottom: 25%;
+    height: 2px;
+    background: #4ab8f0;
+    box-shadow: 0 0 10px #4ab8f066;
+    z-index: 3;
+  }
+  .wl-label {
+    position: absolute;
+    right: calc(25% + 56px);
+    bottom: calc(25% + 5px);
+    font-size: 8px;
+    letter-spacing: 1px;
+    color: #4ab8f0;
+    background: #0a1e30cc;
+    border: 1px solid #1a4a6a;
+    padding: 2px 7px;
+    border-radius: 2px;
+  }
+
+  /* Ruler */
+  .ruler {
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    width: 38px;
+    background: #f2f2f0;
+    border-right: 1px solid #8a8a7a;
+    z-index: 2;
+  }
+  .r-mark {
+    position: absolute;
+    left: 2px;
+    font-size: 7px;
+    color: #333;
+    font-family: monospace;
+    line-height: 1;
+  }
+  .r-tick {
+    position: absolute;
+    left: 0; width: 100%;
+    height: 1px;
+    background: #ccc;
+  }
+  .r-tick.major { background: #888; }
+
+  /* Floating readout */
+  .readout {
+    position: absolute;
+    bottom: 30%;
+    right: 10px;
+    background: #0d1520e8;
+    border: 1px solid #1c3a5a;
+    border-radius: 3px;
+    padding: 8px 12px;
+    z-index: 4;
+    min-width: 100px;
+    backdrop-filter: blur(4px);
+  }
+  .readout-val  { color: #3ab878; font-size: 26px; font-weight: bold; line-height: 1; letter-spacing: -1px; }
+  .readout-unit { color: #1a3a2a; font-size: 9px; letter-spacing: 1px; margin-top: 1px; }
+  .readout-zone { color: #3ab878; font-size: 8px; letter-spacing: 2px; margin-top: 4px; border-top: 1px solid #1c3a2a; padding-top: 4px; }
+
+  /* Sparkline */
+  .spark {
+    background: #070b12;
+    border: 1px solid #141e2a;
+    border-radius: 3px;
+    padding: 8px 12px;
+  }
+  .spark-hdr {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .spark-title { color: #2a3a4a; font-size: 8px; letter-spacing: 2px; text-transform: uppercase; }
+  .spark-range  { color: #1a2a3a; font-size: 8px; }
+  .spark-area {
+    height: 52px;
+    background: #050810;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  svg.sp { width: 100%; height: 52px; }
+
+  /* ── RIGHT PANEL ── */
+  .right {
+    display: flex;
+    flex-direction: column;
+    background: #090d16;
+  }
+
+  /* Big metric */
+  .big-metric {
+    padding: 20px 16px 16px;
+    border-bottom: 1px solid #1c2535;
+    text-align: center;
+  }
+  .bm-label {
+    color: #1e2e3e;
+    font-size: 8px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .bm-val {
+    font-size: 54px;
+    font-weight: bold;
+    line-height: 1;
+    letter-spacing: -2px;
+    color: #3ab878;
+    text-shadow: 0 0 30px #3ab87833;
+  }
+  .bm-unit { color: #1a3a2a; font-size: 10px; letter-spacing: 2px; margin-top: 3px; }
+  .bm-status {
+    margin-top: 10px;
+    display: inline-block;
+    background: #0a2018;
+    border: 1px solid #1a4a2a;
+    border-radius: 2px;
+    padding: 4px 16px;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: #3ab878;
+  }
+
+  /* Divider label */
+  .section-label {
+    padding: 6px 14px;
+    color: #1a2a3a;
+    font-size: 8px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    background: #0d1520;
+    border-bottom: 1px solid #1c2535;
+    border-top: 1px solid #1c2535;
+  }
+
+  /* Zone table */
+  .zone-table { padding: 10px 14px; border-bottom: 1px solid #1c2535; }
+  .zone-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 7px;
+    border-radius: 2px;
+    margin-bottom: 2px;
+  }
+  .zone-row.current {
+    background: #0a2018;
+    border: 1px solid #1a4a2a;
+  }
+  .zone-swatch { width: 6px; height: 6px; border-radius: 1px; flex-shrink: 0; }
+  .zone-name-col { flex: 1; font-size: 9px; letter-spacing: 1px; color: #2a3a4a; }
+  .zone-range-col { font-size: 8px; color: #1a2a3a; min-width: 60px; text-align: right; }
+  .zone-row.current .zone-name-col { color: #3ab878; }
+  .zone-row.current .zone-range-col { color: #1a4a2a; }
+  .zone-arrow { color: #3ab878; font-size: 8px; }
+
+  /* Mini bar chart */
+  .mini-bar { padding: 10px 14px; border-bottom: 1px solid #1c2535; }
+  .bar-track {
+    height: 6px;
+    background: #0d1520;
+    border: 1px solid #1c2535;
+    border-radius: 1px;
+    overflow: hidden;
+    margin-bottom: 4px;
+  }
+  .bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #1a6a40, #3ab878);
+    width: 21%;
+    border-radius: 1px;
+  }
+  .bar-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 8px;
+    color: #1a2a3a;
+  }
+
+  /* Confidence */
+  .conf-row {
+    padding: 8px 14px;
+    border-bottom: 1px solid #1c2535;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .conf-key  { font-size: 8px; letter-spacing: 1px; color: #1e2e3e; flex: 1; text-transform: uppercase; }
+  .conf-bar-bg { flex: 2; height: 3px; background: #1c2535; border-radius: 1px; overflow: hidden; }
+  .conf-bar-fill { height: 100%; width: 78%; background: #4a8ab8; border-radius: 1px; }
+  .conf-pct  { font-size: 9px; color: #4a8ab8; min-width: 30px; text-align: right; }
+
+  /* MQTT topics */
+  .mqtt-topics { padding: 10px 14px; flex: 1; }
+  .topic-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 3px 0;
+    border-bottom: 1px solid #0d1520;
+  }
+  .t-key  { font-size: 8px; color: #1e2e3e; flex: 1; font-family: monospace; }
+  .t-val  { font-size: 9px; color: #3a6a8a; font-family: monospace; min-width: 55px; text-align: right; }
+  .mqtt-note { margin-top: 8px; font-size: 7px; color: #141e28; letter-spacing: 1px; }
+
+  /* ── FOOTER ── */
+  .ftr {
+    grid-column: 1 / -1;
+    background: #0d1520;
+    border-top: 1px solid #1c2535;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 0;
+  }
+  .ftr-item {
+    border-right: 1px solid #1c2535;
+    padding: 0 12px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 8px;
+  }
+  .ftr-key { color: #1a2a3a; letter-spacing: 1px; }
+  .ftr-val { color: #2a4a3a; }
+  .ftr-val.ok { color: #2a5a3a; }
+  .keys {
+    margin-left: auto;
+    display: flex;
+    gap: 5px;
+  }
+  .key {
+    background: #0d1520;
+    border: 1px solid #1c2535;
+    border-radius: 2px;
+    padding: 1px 6px;
+    font-size: 8px;
+    color: #1e3040;
+    letter-spacing: 1px;
+  }
+
+  /* Changelog box */
+  .changelog {
+    max-width: 1160px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .cl-box {
+    background: #0d1520;
+    border: 1px solid #1c2535;
+    border-radius: 3px;
+    padding: 14px 16px;
+  }
+  .cl-title { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; color: #4a8ab8; }
+  .cl-title.green { color: #3ab878; }
+  .cl-item {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 5px;
+    font-size: 9px;
+    line-height: 1.5;
+    color: #2a3a4a;
+  }
+  .cl-bullet { color: #1a3a5a; flex-shrink: 0; }
+  .cl-bullet.green { color: #1a4a2a; }
+</style>
+</head>
+<body>
+
+<div class="page-title">River Eye — Proposed Dashboard Redesign</div>
+<div class="page-sub">Gaya: Professional Terminal / Monitoring System — tanpa emoji, tanpa dekorasi berlebih</div>
+
+<!-- WINDOW -->
+<div class="win">
+  <div class="win-bar">
+    <div class="d r"></div><div class="d y"></div><div class="d g"></div>
+    <div class="win-title">Water Level Monitor — River Eye v2.0</div>
+  </div>
+
+  <div class="dash">
+
+    <!-- HEADER -->
+    <div class="hdr">
+      <div class="hdr-brand">
+        <span class="hdr-name">RIVER EYE</span>
+        <span class="hdr-sub">SISTEM MONITORING KETINGGIAN AIR SUNGAI</span>
+      </div>
+      <div class="hdr-chips">
+        <div class="chip">
+          <div class="chip-key">Status</div>
+          <div class="chip-val live">AKTIF</div>
+        </div>
+        <div class="chip">
+          <div class="chip-key">Sumber</div>
+          <div class="chip-val">Webcam 0</div>
+        </div>
+        <div class="chip">
+          <div class="chip-key">FPS</div>
+          <div class="chip-val">28</div>
+        </div>
+        <div class="chip">
+          <div class="chip-key">Waktu</div>
+          <div class="chip-val">14:32:07</div>
+        </div>
+        <div class="chip">
+          <div class="chip-key">Uptime</div>
+          <div class="chip-val">00:12:34</div>
+        </div>
+      </div>
+      <div class="mqtt-status">
+        <div class="conn-dot"></div>
+        <span class="conn-label">MQTT TERHUBUNG</span>
+        <span class="conn-host">localhost:1883</span>
+      </div>
+    </div>
+
+    <!-- MAIN LEFT -->
+    <div class="main">
+
+      <!-- Camera -->
+      <div class="cam">
+        <div class="cam-hdr">
+          <div class="cam-tag">Live Feed</div>
+          <div class="cam-source">Sumber: webcam:0 · resolusi 640x480</div>
+          <div class="cam-fps">28 fps</div>
+          <div class="cam-rec"><div class="rec-dot"></div>REC</div>
+        </div>
+        <div class="cam-img">
+          <div class="scene-bg">
+            <!-- Ruler -->
+            <div class="ruler">
+              <div class="r-mark" style="top:2px">400</div>
+              <div class="r-mark" style="top:23%">300</div>
+              <div class="r-mark" style="top:48%">200</div>
+              <div class="r-mark" style="top:72%">100</div>
+              <div class="r-mark" style="bottom:4px">0 cm</div>
+              <div class="r-tick major" style="top:25%"></div>
+              <div class="r-tick major" style="top:50%"></div>
+              <div class="r-tick major" style="top:75%"></div>
+              <div class="r-tick" style="top:12.5%"></div>
+              <div class="r-tick" style="top:37.5%"></div>
+              <div class="r-tick" style="top:62.5%"></div>
+              <div class="r-tick" style="top:87.5%"></div>
+            </div>
+            <!-- Gauge -->
+            <div class="gauge-panel">
+              <div class="g-zone r"></div>
+              <div class="g-zone o"></div>
+              <div class="g-zone y"></div>
+              <div class="g-zone g active"></div>
+            </div>
+            <!-- Water -->
+            <div class="water-body"></div>
+            <div class="wl"></div>
+            <div class="wl-label">BATAS AIR</div>
+            <!-- Readout float -->
+            <div class="readout">
+              <div class="readout-val">85.3</div>
+              <div class="readout-unit">CENTIMETER</div>
+              <div class="readout-zone">ZONA: AMAN</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sparkline -->
+      <div class="spark">
+        <div class="spark-hdr">
+          <div class="spark-title">Riwayat Ketinggian (150 Frame Terakhir)</div>
+          <div class="spark-range">0 — 400 cm</div>
+        </div>
+        <div class="spark-area">
+          <svg class="sp" viewBox="0 0 500 52" preserveAspectRatio="none">
+            <!-- Zone lines -->
+            <line x1="0" y1="39" x2="500" y2="39" stroke="#1a3a2a" stroke-width="0.5"/>
+            <line x1="0" y1="26" x2="500" y2="26" stroke="#3a3010" stroke-width="0.5"/>
+            <line x1="0" y1="13" x2="500" y2="13" stroke="#3a1010" stroke-width="0.5"/>
+            <!-- Zone labels -->
+            <text x="4" y="37" font-size="5" fill="#1a3a2a" font-family="monospace">AMAN</text>
+            <text x="4" y="24" font-size="5" fill="#3a3010" font-family="monospace">SIAGA</text>
+            <text x="4" y="11" font-size="5" fill="#3a1010" font-family="monospace">WASPADA</text>
+            <!-- Data line (simulated wave, stable low) -->
+            <polyline
+              points="0,46 25,45 50,44 75,45 100,43 125,44 150,42 175,43 200,41 225,42 250,41 275,40 300,41 325,40 350,39 375,40 400,39 425,40 450,39 475,40 500,39"
+              stroke="#3ab878" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+            <!-- Area fill -->
+            <path
+              d="M0,46 L25,45 L50,44 L75,45 L100,43 L125,44 L150,42 L175,43 L200,41 L225,42 L250,41 L275,40 L300,41 L325,40 L350,39 L375,40 L400,39 L425,40 L450,39 L475,40 L500,39 L500,52 L0,52Z"
+              fill="#3ab87814"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right">
+      <!-- Big number -->
+      <div class="big-metric">
+        <div class="bm-label">Ketinggian Air Terdeteksi</div>
+        <div class="bm-val">85.3</div>
+        <div class="bm-unit">CENTIMETER</div>
+        <div class="bm-status">AMAN</div>
+      </div>
+
+      <div class="section-label">Referensi Zona Ketinggian</div>
+      <div class="zone-table">
+        <div class="zone-row">
+          <div class="zone-swatch" style="background:#8a1010"></div>
+          <div class="zone-name-col">BAHAYA</div>
+          <div class="zone-range-col">&gt; 350 cm</div>
+        </div>
+        <div class="zone-row">
+          <div class="zone-swatch" style="background:#8a4010"></div>
+          <div class="zone-name-col">WASPADA</div>
+          <div class="zone-range-col">250 – 350 cm</div>
+        </div>
+        <div class="zone-row">
+          <div class="zone-swatch" style="background:#8a7010"></div>
+          <div class="zone-name-col">SIAGA</div>
+          <div class="zone-range-col">100 – 250 cm</div>
+        </div>
+        <div class="zone-row current">
+          <div class="zone-swatch" style="background:#1a6a3a"></div>
+          <div class="zone-name-col">AMAN</div>
+          <div class="zone-range-col">0 – 100 cm</div>
+          <div class="zone-arrow">&#9664;</div>
+        </div>
+      </div>
+
+      <div class="section-label">Posisi Relatif (0 – 400 cm)</div>
+      <div class="mini-bar">
+        <div class="bar-track">
+          <div class="bar-fill"></div>
+        </div>
+        <div class="bar-labels">
+          <span>0</span>
+          <span>100</span>
+          <span>250</span>
+          <span>350</span>
+          <span>400 cm</span>
+        </div>
+      </div>
+
+      <div class="conf-row">
+        <div class="conf-key">Confidence</div>
+        <div class="conf-bar-bg"><div class="conf-bar-fill"></div></div>
+        <div class="conf-pct">78%</div>
+      </div>
+
+      <div class="section-label">MQTT — Data Dikirim</div>
+      <div class="mqtt-topics">
+        <div class="topic-row">
+          <div class="t-key">river-eye/height_cm</div>
+          <div class="t-val">85.3</div>
+        </div>
+        <div class="topic-row">
+          <div class="t-key">river-eye/height_m</div>
+          <div class="t-val">0.853</div>
+        </div>
+        <div class="topic-row">
+          <div class="t-key">river-eye/level</div>
+          <div class="t-val">AMAN</div>
+        </div>
+        <div class="topic-row">
+          <div class="t-key">river-eye/zone</div>
+          <div class="t-val">hijau</div>
+        </div>
+        <div class="topic-row">
+          <div class="t-key">river-eye/confidence</div>
+          <div class="t-val">0.780</div>
+        </div>
+        <div class="mqtt-note">interval: 2 detik &nbsp;·&nbsp; qos: 1 &nbsp;·&nbsp; retain: true</div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="ftr">
+      <div class="ftr-item">
+        <div class="ftr-key">LOGGING</div>
+        <div class="ftr-val">NONAKTIF</div>
+      </div>
+      <div class="ftr-item">
+        <div class="ftr-key">MQTT</div>
+        <div class="ftr-val ok">TERHUBUNG</div>
+      </div>
+      <div class="ftr-item">
+        <div class="ftr-key">ROI</div>
+        <div class="ftr-val ok">TERSET</div>
+      </div>
+      <div class="ftr-item">
+        <div class="ftr-key">KALIBRASI</div>
+        <div class="ftr-val ok">AKTIF</div>
+      </div>
+      <div class="keys">
+        <div class="key">[R] Reset ROI</div>
+        <div class="key">[C] Kalibrasi</div>
+        <div class="key">[L] Logging</div>
+        <div class="key">[P] Pause</div>
+        <div class="key">[S] Screenshot</div>
+        <div class="key">[D] Debug</div>
+        <div class="key">[Q] Keluar</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- CHANGELOG -->
+<div class="changelog">
+  <div class="cl-box">
+    <div class="cl-title green">Perubahan Visual</div>
+    <div class="cl-item"><span class="cl-bullet green">+</span> Header bar dengan status chip dan MQTT indicator live</div>
+    <div class="cl-item"><span class="cl-bullet green">+</span> Angka ketinggian besar di panel kanan, mudah dibaca dari jauh</div>
+    <div class="cl-item"><span class="cl-bullet green">+</span> Label "BATAS AIR" menggantikan garis merah tanpa keterangan</div>
+    <div class="cl-item"><span class="cl-bullet green">+</span> Zona tabel dengan pointer aktif dan highlight row</div>
+    <div class="cl-item"><span class="cl-bullet green">+</span> Progress bar posisi ketinggian relatif (0–400 cm)</div>
+    <div class="cl-item"><span class="cl-bullet green">+</span> Footer: status sistem + semua keybind tertera</div>
+    <div class="cl-item"><span class="cl-bullet green">+</span> Sparkline dengan garis zona referensi dan label</div>
+    <div class="cl-item"><span class="cl-bullet green">+</span> Tanpa emoji, semua teks kapital dan huruf latin bersih</div>
+  </div>
+  <div class="cl-box">
+    <div class="cl-title">Perbaikan MQTT & Kode</div>
+    <div class="cl-item"><span class="cl-bullet">+</span> flood_detection.py: tambah MQTT publish (sekarang belum ada sama sekali)</div>
+    <div class="cl-item"><span class="cl-bullet">+</span> Payload river-eye/data diperkaya: tambah zone + confidence</div>
+    <div class="cl-item"><span class="cl-bullet">+</span> MQTT topics ditampilkan live di dalam dashboard</div>
+    <div class="cl-item"><span class="cl-bullet">+</span> Status MQTT (terhubung/terputus) di header dan footer</div>
+    <div class="cl-item"><span class="cl-bullet">+</span> Menu protel.py: border box dan warna yang rapi, tanpa emoji</div>
+    <div class="cl-item"><span class="cl-bullet">+</span> telemetry.py: tambah topic river-eye/zone terpisah</div>
+  </div>
+</div>
+
+</body>
+</html>

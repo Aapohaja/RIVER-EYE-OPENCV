@@ -1,0 +1,7 @@
+{
+  "autodeskProduct": "Fusion360",
+  "type": "script",
+  "script": "solar_box.py",
+  "supportedOS": "windows|mac",
+  "editEnabled": true
+}

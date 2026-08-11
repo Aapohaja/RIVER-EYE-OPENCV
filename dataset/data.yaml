@@ -1,0 +1,11 @@
+# YOLO Training Config — River Eye
+# Diisi setelah export dari Roboflow ke folder ini
+
+path: ./dataset
+train: images/train
+val: images/val
+
+nc: 2
+names:
+  0: staff_gauge
+  1: water_surface

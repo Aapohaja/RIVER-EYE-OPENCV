@@ -1,0 +1,15 @@
+[Unit]
+Description=River Eye Water Level Monitor
+After=network.target
+
+[Service]
+Type=simple
+User=protel
+WorkingDirectory=/home/protel/protel
+Environment=DISPLAY=:0
+ExecStart=/home/protel/protel/venv/bin/python /home/protel/protel/water_level.py http://localhost:8081/stream
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

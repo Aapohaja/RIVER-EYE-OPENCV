@@ -1,0 +1,144 @@
+{
+    "zones": {
+        "hijau": {
+            "nama": "AMAN (< 100 cm)",
+            "level": "AMAN",
+            "hsv_min": [
+                0,
+                0,
+                150
+            ],
+            "hsv_max": [
+                179,
+                50,
+                255
+            ],
+            "tinggi_min_m": 0.0,
+            "tinggi_max_m": 1.0,
+            "warna_display": [
+                0,
+                180,
+                0
+            ]
+        },
+        "kuning": {
+            "nama": "SEDANG (100-150 cm)",
+            "level": "SEDANG",
+            "hsv_min": [
+                18,
+                80,
+                100
+            ],
+            "hsv_max": [
+                38,
+                255,
+                255
+            ],
+            "tinggi_min_m": 1.01,
+            "tinggi_max_m": 1.5,
+            "warna_display": [
+                0,
+                230,
+                230
+            ]
+        },
+        "orange": {
+            "nama": "WASPADA (150-200 cm)",
+            "level": "WASPADA",
+            "hsv_min": [
+                8,
+                100,
+                120
+            ],
+            "hsv_max": [
+                22,
+                255,
+                255
+            ],
+            "tinggi_min_m": 1.5,
+            "tinggi_max_m": 2.0,
+            "warna_display": [
+                0,
+                140,
+                255
+            ]
+        },
+        "merah": {
+            "nama": "BAHAYA (> 200 cm)",
+            "level": "BAHAYA",
+            "hsv_min": [
+                0,
+                100,
+                100
+            ],
+            "hsv_max": [
+                8,
+                255,
+                255
+            ],
+            "hsv_min_2": [
+                168,
+                100,
+                100
+            ],
+            "hsv_max_2": [
+                179,
+                255,
+                255
+            ],
+            "tinggi_min_m": 2.0,
+            "tinggi_max_m": 2.5,
+            "warna_display": [
+                0,
+                0,
+                240
+            ]
+        }
+    },
+    "roi": [
+        132,
+        274,
+        335,
+        654
+    ],
+    "kalibrasi": {
+        "y_bottom": 371,
+        "y_top": 10,
+        "cm_bottom": 0.0,
+        "cm_top": 250.0,
+        "ys": [
+            371,
+            321,
+            249,
+            10
+        ],
+        "cms": [
+            0.0,
+            50.0,
+            100.0,
+            250.0
+        ],
+        "total_height_m": 2.5,
+        "px_per_meter": 144.4
+    },
+    "sumber_video": "http://100.83.7.110:8081/stream",
+    "smoothing_frames": 10,
+    "roi_polygon": [
+        [
+            132,
+            281
+        ],
+        [
+            335,
+            274
+        ],
+        [
+            302,
+            636
+        ],
+        [
+            145,
+            654
+        ]
+    ]
+}

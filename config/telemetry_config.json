@@ -1,0 +1,14 @@
+{
+    "mqtt": {
+        "host": "localhost",
+        "port": 1883,
+        "topic_prefix": "river-eye"
+    },
+    "influxdb": {
+        "url": "http://localhost:8086",
+        "token": "rivereye-admin-token-2026",
+        "org": "river-eye",
+        "bucket": "flood-monitoring"
+    },
+    "interval_seconds": 2
+}
