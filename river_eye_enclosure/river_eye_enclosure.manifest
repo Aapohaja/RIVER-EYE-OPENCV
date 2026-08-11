@@ -1,9 +1,0 @@
-{
-    "autodeskProduct": "Fusion360",
-    "type": "script",
-    "engine": "Python",
-    "author": "Aaron",
-    "description": "River Eye enclosure — outdoor IoT flood monitoring node",
-    "supportedOS": "windows|mac",
-    "editEnabled": true
-}
