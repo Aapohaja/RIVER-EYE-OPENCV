@@ -50,64 +50,77 @@ You will need:
 
 ## Pipeline
 
-The detection pipeline runs on every frame that clears the freshness check:
+Every frame that passes the freshness check runs through 7 stages before turning into a water level reading.
 
-```
-IP Camera (MJPEG stream)
-        │
-        ▼
-[1] ThreadedCapture
-    Background thread that always holds the latest frame,
-    so the pipeline never blocks on I/O.
-        │
-        ▼
-[2] Preprocessing
-    Rotate frame + crop with homography to align the pole vertically.
-        │
-        ▼
-[3] Crop ROI
-    Cut out the polygonal region containing only the graduated pole.
-        │
-        ▼
-[4] Board Mask
-    Convert BGR → HSV.
-    Keep pixels where V is bright and S < 100 (the white pole).
-    Clean up with morphological CLOSE + OPEN.
-        │
-        ▼
-[5] Column Scan
-    Split the ROI into 80 vertical columns.
-    Scan bottom to top in each column, find the dark→bright transition.
-    Take the MEDIAN row across all columns as the initial water line.
-        │
-        ▼
-[6] Laplacian Refinement
-    Within ±20 px of the initial line, pick the row with the
-    sharpest edge (highest Laplacian response) as the final water line.
-        │
-        ▼
-[7] Kalman Filter 1D
-    Smooth the estimate against jitter across consecutive frames.
-        │
-        ▼
-   Confidence > 0.20?
-   ┌──────────┴──────────┐
-   │ Yes                 │ No
-   ▼                     ▼
-Convert to cm        Frame skipped
-(3-point linear
- calibration at
- 50 / 100 / 250 cm)
-   │
-   ▼
-HTTP POST JSON to /logs
-{ "location_id": "...", "water_level_cm": 114.8 }
-   │
-   ▼
-Backend Server
+```mermaid
+flowchart LR
+    A([IP Camera<br/>MJPEG Stream]) --> B[1 · ThreadedCapture]
+    B --> C[2 · Preprocessing]
+    C --> D[3 · Crop ROI]
+    D --> E[4 · Board Mask]
+    E --> F[5 · Column Scan]
+    F --> G[6 · Laplacian Refinement]
+    G --> H[7 · Kalman Filter 1D]
+    H --> I{Confidence<br/>&gt; 0.20?}
+    I -- Yes --> J[Convert to cm<br/>3-point calibration]
+    I -- No --> K[/Frame skipped/]
+    J --> L[HTTP POST JSON<br/>every 2s]
+    L --> M([Backend Server<br/>API /logs])
+
+    style A fill:#1e293b,stroke:#38bdf8,color:#f1f5f9
+    style M fill:#1e293b,stroke:#38bdf8,color:#f1f5f9
+    style I fill:#7c2d12,stroke:#fb923c,color:#fff
+    style J fill:#14532d,stroke:#4ade80,color:#fff
+    style K fill:#450a0a,stroke:#f87171,color:#fff
+    style L fill:#164e63,stroke:#22d3ee,color:#fff
 ```
 
-Every stage exists because the naive version failed at least once in the field. The Kalman filter, for example, was added after seeing frame-to-frame jitter caused by ripples. The Laplacian refinement was added because Otsu alone kept picking the wrong row when floating debris passed through.
+### Stage-by-stage
+
+**1 · ThreadedCapture**
+A background thread holds the latest frame at all times. The pipeline never blocks on I/O.
+
+**2 · Preprocessing**
+Rotate the frame and warp it with homography so the graduated pole stands vertical in the image.
+
+**3 · Crop ROI**
+Cut out the polygonal region that contains only the pole. Everything else is discarded.
+
+**4 · Board Mask**
+Convert BGR to HSV. Keep pixels where V is bright and S is under 100 — the white pole. Clean up with morphological CLOSE then OPEN.
+
+**5 · Column Scan**
+Split the ROI into 80 vertical columns. In each column, scan brk → bright transition. Take the median row across all 80columns as the initial water line.
+
+**6 · Laplacian Refinement**
+Within ±20 px of the initial line, pick the row with the highest Laplacian response. This is the sharpest visible edge, which is almost always the true water surface.
+
+**7 · Kalman Filter 1D**
+Smooth the estimate across consecutive frames so ripples and momentary occlusions don't cause the reading to jump.
+
+### Confidence gate
+
+If the final confidence is above 0.20, the pixel row is converar interpolation between three calibration marks at 50, 100,and 250 cm. The result is posted to the backend as:
+
+```json
+{
+  "location_id": "kalibokor-01",
+  "water_level_cm": 114.8
+}
+```
+
+Frames that don't clear the gate are dropped silently. Better to skip a reading than to publish a wrong one.
+
+### Why each stage exists
+
+Every stage was added after the naive version failed at least once in the field:
+
+- **Kalman filter** came in after ripples caused readings to jump ±5 cm frame-to-frame.
+- **Laplacian refinement** was added when Otsu alone kept lockead of the water surface.
+- **Confidence gate** appeared after a spider walked across the camera at 2 AM and gave a reading of 400 cm.
+- **ThreadedCapture** replaced blocking `.read()` calls after the Pi started dropping frames during long HTTP timeouts.
+
+The system is deliberately classical rather than a trained neural net. Classical CV on a Raspberry Pi matches the accuracy a deep model would give — without the labeling effort, the retraining cycle, or the extra compute.
 
 ---
 
